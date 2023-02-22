@@ -4,6 +4,10 @@ pipeline {
     maven "M3"
     jdk "JDK11"
     }
+  
+  parameters {
+    REPOSITORY_NAME = (name: 'REPOSITORY_NAME', defaultValue: 'https://github.com/sudongst/spring-petclinic.git/', description: 'How should I greet the world?')
+    
 
   environment {
     AWS_CREDENTIAL_NAME = "awsEcrcredential"

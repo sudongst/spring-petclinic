@@ -1,7 +1,7 @@
 version: '3.9'
 services:
-  project03-spring-petclinic:
+  project02-spring-petclinic:
     image: ${IMAGE}:${TAG}
-    container_name: project03-spring-petclinic
+    container_name: project02-spring-petclinic
     ports:
-      - "80:80"
+      - "8080:8080"

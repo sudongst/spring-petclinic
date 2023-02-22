@@ -5,7 +5,7 @@ pipeline {
     jdk "JDK11"
     }
 
-  enviroment {
+  environment {
     AWS_CREDENTIAL_NAME = "awsEcrcredential"
     AWS_ACCOUNT_ID = "257307634175"
     REGION = "ap-northeast-2"
@@ -17,7 +17,6 @@ pipeline {
     CODEDEPLOY_NAME = "project02"
     CODEDEPLOY_GROUP_NAME = "project02-code-deploy-group"
     REPOSITORY_NAME = "https://github.com/sudongst/spring-petclinic.git/"
-  
   }
   
   stages {

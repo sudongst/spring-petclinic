@@ -88,7 +88,7 @@ pipeline {
                 sh '''
                     aws deploy create-deployment --application-name project02 \
                     --deployment-config-name CodeDeployDefault.OneAtATime \
-                    --deployment-group-name project02-deploy \
+                    --deployment-group-name project02-code-deploy-group \
                     --s3-location bucket=project02-codeproject,bundleType=zip,key=deploy-1.0.zip
                     '''
             }

@@ -1,83 +1,123 @@
 pipeline {
   agent any
-    tools {
-    maven "M3"
-    jdk "JDK11"
-    }
-  
-  parameters {
-    string(name: 'REPOSITORY_NAME', defaultValue: 'https://github.com/sudongst/spring-petclinic.git/', description: 'How should I greet the world?')
-    }
+  tools {
+      maven 'M3'
+      jdk 'JDK11'
+  }   
 
   environment {
-    AWS_CREDENTIAL_NAME = "awsEcrcredential"
-    AWS_ACCOUNT_ID = "257307634175"
-    REGION = "ap-northeast-2"
-    DOCKER_IMAGE_NAME="project02-spring-petclinic"
-    DOCKER_TAG="1.0"
-    ECR_REPOSITORY = "${AWS_ACCOUNT_ID}.dkr.ecr.ap-northeast-2.amazonaws.com"
-    ECR_DOCKER_IMAGE = "${ECR_REPOSITORY}/${DOCKER_IMAGE_NAME}"
-    ECR_DOCKER_TAG = "${DOCKER_TAG}"
-    CODEDEPLOY_NAME = "project02"
-    CODEDEPLOY_GROUP_NAME = "project02-code-deploy-group"
-    REPOSITORY_NAME = "https://github.com/sudongst/spring-petclinic.git/"
+      AWS_CREDENTIAL_NAME = "AWSCredentials"
+      REGION = "ap-northeast-2"
+      DOCKER_IMAGE_NAME="project02-spring-petclinic"
+      DOCKER_TAG="1.0"
+      ECR_REPOSITORY = "${params.AWS_ACCOUNT_ID}.dkr.ecr.ap-northeast-2.amazonaws.com"
+      ECR_DOCKER_IMAGE = "${ECR_REPOSITORY}/${DOCKER_IMAGE_NAME}"
+      ECR_DOCKER_TAG = "${DOCKER_TAG}"
   }
-  
+
   stages {
-    stage('Git fatch') {
-      steps {
-        echo 'Git fatch'
-        git url: 'https://github.com/sudongst/spring-petclinic.git/',
-          branch: 'main', credentialsId: 'gitCredential'
+      stage('Git clone') {
+          steps {
+              git url: 'https://github.com/sudongst/spring-petclinic.git', branch: 'main', credentialsId: 'sudongst'
+          }
+          post {
+              success {
+                  echo 'success clone project'
+              }
+              failure {
+                  error 'fail clone project' // exit pipeline
+              }
+          }
       }
-    }
-    stage('Maven Build') {
-      steps {
-        echo 'Maven Build'
-        sh 'mvn -Dmaven.test.failure.ignore=true clean package'
+      
+      stage ('mvn Build') {
+          steps {
+              sh 'mvn -Dmaven.test.failure.ignore=true install' 
+          }
+          post {
+              success {
+                  junit 'target/surefire-reports/**/*.xml' 
+              }
+          }
       }
-    }
-    
-    stage('Docker Image') {
+      
+      stage ('Docker Build') {
+          steps {
+              dir("${env.WORKSPACE}") {
+                  sh 'docker build -t ${ECR_DOCKER_IMAGE}:${ECR_DOCKER_TAG} .'
+              }
+          }
+          
+          post {
+              success {
+                  echo "Docker build success!"
+              }
+          }
+      }       
+
+      stage('Push Docker Image') {
+          steps {
+              echo "Push Docker Image to ECR"
+              script{
+                  // cleanup current user docker credentials
+                  sh 'rm -f ~/.dockercfg ~/.docker/config.json || true'                    
+                 
+                  docker.withRegistry("https://${ECR_REPOSITORY}", "ecr:${REGION}:${AWS_CREDENTIAL_NAME}") {
+                    docker.image("${ECR_DOCKER_IMAGE}:${ECR_DOCKER_TAG}").push()
+                  }
+              }
+          }
+          post {
+              success {
+                  echo "Push Docker Image success!"
+              }
+          }
+      }
+      stage('Upload to S3') {
+          steps {
+              echo "Upload to S3"
+              sh 'zip -r deploy-1.0.zip ./deploy/scripts appspec.yml'
+              sh 'aws s3 cp --region ap-northeast-2 --acl private ./deploy-1.0.zip s3://project00-codedeploy'
+          }
+      }
+              
+      stage('============ Deploy workload ============') {
+      when { expression { return params.DEPLOY_WORKLOAD } }
+      agent { label 'master' }
       steps {
-        echo 'Docker Image'
-        dir("${env.WORKSPACE}") {
-        sh 'docker build -t ${ECR_DOCKER_IMAGE}:${ECR_DOCKER_TAG} .'
-            }
-        }
-    }
-    
-    stage('Image Push') {
-      steps {
-        echo 'Image Psuh'
-        script{
-           // cleanup current user docker credentials
-  sh 'rm -f ~/.dockercfg ~/.docker/config.json || true'                    
-                   
-  docker.withRegistry("https://${ECR_REPOSITORY}", "ecr:${REGION}:${AWS_CREDENTIAL_NAME}") {
-    docker.image("${ECR_DOCKER_IMAGE}:${ECR_DOCKER_TAG}").push()
-            }
-        }
-      }        
-  }
-    
-    
-      stage('Codedeploy Workload') {
-        steps {
-          echo 'Codedeploy Workload'
-          script{
-            sh '''
-                    aws deploy create-deployment \
-                      --application-name ${CODEDEPLOY_NAME} \
-                      --deployment-group-name ${CODEDEPLOY_GROUP_NAME} \
+          echo "Run CodeDeploy with creating deployment"
+          script {
+              sh'''
+                  aws deploy create-deployment \
+                      --application-name project02-codedeploy \
+                      --deployment-group-name project02-codedeploy-workload \
                       --region ${REGION} \
-                      --revision revisionType=GitHub,repository=${REPOSITORY_NAME},commitId=${GIT_COMMIT} \
+                      --s3-location bucket=project02-codedeploy,bundleType=zip,key=deploy-1.0.zip \
                       --file-exists-behavior OVERWRITE \
                       --output json > DEPLOYMENT_ID.json
               '''
-           
+              def DEPLOYMENT_ID = sh(script: "cat DEPLOYMENT_ID.json | grep -o '\"deploymentId\": \"[^\"]*' | cut -d'\"' -f4", returnStdout: true).trim()
+              echo "$DEPLOYMENT_ID"
+              sh "rm -rf ./DEPLOYMENT_ID.json"
+              def DEPLOYMENT_RESULT = ""
+              while("$DEPLOYMENT_RESULT" != "\"Succeeded\"") {
+                  DEPLOYMENT_RESULT = sh(
+                      script:"aws deploy get-deployment \
+                                  --region ${REGION} \
+                                  --query \"deploymentInfo.status\" \
+                                  --deployment-id ${DEPLOYMENT_ID}",
+                      returnStdout: true
+                  ).trim()
+                  echo "$DEPLOYMENT_RESULT"
+                  if ("$DEPLOYMENT_RESULT" == "\"Failed\"") {
+                      currentBuild.result = 'FAILURE'
+                      break
+                  }
+                  sleep(10) // sleep 10s
+              }
+              currentBuild.result = 'SUCCESS'
           }
-        }
       }
-   }
+      
   }
+}

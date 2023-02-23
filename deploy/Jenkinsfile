@@ -77,7 +77,7 @@ pipeline {
       stage('Upload to S3') {
           steps {
               echo "Upload to S3"
-              sh 'zip -r deploy-1.0.zip ./deploy/scripts appspec.yml'
+              sh 'zip -r deploy-1.0.zip ./deploy/scripts appspec.yml ./deploy/docker-compose.yml'
               sh 'aws s3 cp --region ap-northeast-2 --acl private ./deploy-1.0.zip s3://project02-tfbackend-s3'
               sh 'rm -rf ./deploy-1.0.zip'
           }

@@ -104,6 +104,7 @@ pipeline {
                     --deployment-group-name project02-code-deploy \
                     --s3-location bucket=project02-tfbackend-s3,bundleType=zip,key=deploy-1.0.zip
                     '''
+                    sleep(10) // sleep 10s
           }
       }
    }

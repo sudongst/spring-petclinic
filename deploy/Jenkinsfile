@@ -93,7 +93,7 @@ pipeline {
                     aws deploy create-deployment-group \
                     --application-name project02 \
                     --auto-scaling-groups project02-auto scaling \
-                    --deployment-group-name project02-code-deploy-group \
+                    --deployment-group-name project02-code-deploy \
                     --deployment-config-name CodeDeployDefault.OneAtATime \
                     --service-role-arn arn:aws:iam::257307634175:role/project02-code-deploy-service-role
                     '''
@@ -101,7 +101,7 @@ pipeline {
                 sh '''
                     aws deploy create-deployment --application-name project02 \
                     --deployment-config-name CodeDeployDefault.OneAtATime \
-                    --deployment-group-name project02-code-deploy-group \
+                    --deployment-group-name project02-code-deploy \
                     --s3-location bucket=project02-tfbackend-s3,bundleType=zip,key=deploy-1.0.zip
                     '''
           }

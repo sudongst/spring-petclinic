@@ -92,7 +92,7 @@ pipeline {
                 sh '''
                     aws deploy create-deployment-group \
                     --application-name project02 \
-                    --auto-scaling-groups project02-auto scaling \
+                    --auto-scaling-groups project02-autoscaling \
                     --deployment-group-name project02-code-deploy \
                     --deployment-config-name CodeDeployDefault.OneAtATime \
                     --service-role-arn arn:aws:iam::257307634175:role/project02-code-deploy-service-role

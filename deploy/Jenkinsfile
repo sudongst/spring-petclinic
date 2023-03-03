@@ -85,6 +85,9 @@ pipeline {
               
         stage('Codedeploy Workload') {
             steps {
+                echo "delete the former deployment"
+                sh 'aws deploy delete-application --application-name project02'
+              
                 echo "create application"
                 sh 'aws deploy create-application --application-name project02'
                

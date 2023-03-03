@@ -111,7 +111,7 @@ pipeline {
                     --deployment-group-name project02-code-deploy \
                     --description "Deleting a file" \
                     --file-exists-behavior "DISALLOW" \
-                    --delete-files "/home/ubuntu/docker-compose.yml", "/home/ubuntu/scripts/kill_process.sh", "/home/ubuntu/scripts/run_process.sh"                   
+                    --delete-files "/home/ubuntu/docker-compose.yml"                   
                      
                     '''
                     sleep(10) // sleep 10s

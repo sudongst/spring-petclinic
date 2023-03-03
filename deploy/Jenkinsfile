@@ -109,7 +109,7 @@ pipeline {
                     --application-name project02-delete \
                     --deployment-group-name project02-code-deploy \
                     --file-path /home/ubuntu/script/kill_process.sh \
-                    --file-paht /home/ubuntu/script/run_process.sh \
+                    --file-path /home/ubuntu/script/run_process.sh \
                     --file-path /home/ubuntu/docker-compose.yml 
 
                     '''

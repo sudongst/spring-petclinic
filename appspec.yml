@@ -11,6 +11,10 @@ permission:
     owner: ubuntu
     group: ubuntu
 hooks:
+ BeforeInstall:
+    - location: deploy/scripts/cleanup.sh
+      timeout: 300
+      runas: root
   ApplicationStop:
     - location: deploy/scripts/kill_process.sh
       timeout: 100

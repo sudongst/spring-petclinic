@@ -65,6 +65,8 @@ pipeline {
                  
                   docker.withRegistry("https://${ECR_REPOSITORY}", "ecr:${REGION}:${AWS_CREDENTIAL_NAME}") {
                     docker.image("${ECR_DOCKER_IMAGE}:${ECR_DOCKER_TAG}").push()
+                    
+                  sh 'docker system prune'
                   }
               }
           }

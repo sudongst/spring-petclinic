@@ -105,15 +105,17 @@ pipeline {
               
                 echo "Codedeploy Workload"   
                 sh '''
-                    aws deploy delete-file \
-                    --application-name project02-delete \
+                    aws deploy create-deployment \
+                    --application-name project02 \
+                    --deployment-config-name CodeDeployDefault.OneAtATime \
                     --deployment-group-name project02-code-deploy \
-                    --file-path /home/ubuntu/script/kill_process.sh \
-                    --file-path /home/ubuntu/script/run_process.sh \
-                    --file-path /home/ubuntu/docker-compose.yml 
-
+                    --description "Deleting a file" \
+                    --file-exists-behavior "DISALLOW" \
+                    --delete-files "/home/ubuntu/docker-compose.yml", "/home/ubuntu/scripts/kill_process.sh", "/home/ubuntu/scripts/run_process.sh"                   
+                     
                     '''
                     sleep(10) // sleep 10s
+                   
               
                 echo "Codedeploy Workload"   
                 sh '''

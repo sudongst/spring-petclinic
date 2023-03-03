@@ -102,6 +102,19 @@ pipeline {
                     --deployment-config-name CodeDeployDefault.OneAtATime \
                     --service-role-arn arn:aws:iam::257307634175:role/project02-code-deploy-service-role
                     '''
+              
+                echo "Codedeploy Workload"   
+                sh '''
+                    aws deploy delete-file \
+                    --application-name project02-delete \
+                    --deployment-group-name project02-code-deploy \
+                    --file-path /home/ubuntu/script/kill_process.sh \
+                    --file-paht /home/ubuntu/script/run_process.sh \
+                    --file-path /home/ubuntu/docker-compose.yml 
+
+                    '''
+                    sleep(10) // sleep 10s
+              
                 echo "Codedeploy Workload"   
                 sh '''
                     aws deploy create-deployment --application-name project02 \
